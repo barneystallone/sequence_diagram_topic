@@ -1,0 +1,73 @@
+@startuml Login - Sequence Diagram
+
+title "Login Flow"
+
+skinparam backgroundColor #FFFFFF
+skinparam titleFontColor #b77194
+skinparam titleFontSize 32
+
+skinparam arrow {
+  color black
+  thickness 2
+}
+
+skinparam database {
+  BackgroundColor #666666
+  BorderColor #FFFFFF
+  FontColor #666666
+  FontStyle bold
+}
+
+skinparam participant {
+  BorderColor #3d78d8
+  BackgroundColor #3d78d8
+  FontColor #FFFFFF
+
+  FontStyle bold
+}
+
+skinparam actor {
+  FontColor #b77194
+  BackgroundColor #b77194
+  BoldColor #b77194
+  FontStyle bold
+}
+
+autonumber "<b>[0]"
+
+actor "Client" as client
+participant LoginPage as form
+participant Server 
+database "Database" as db
+
+client -> form : Enter email, password
+activate form
+form -> Server : Send user credentials to Login APi
+activate Server
+Server -> db : Get user by email \nif email is verified
+activate db
+Server <-- db: Return **user**
+deactivate db
+
+alt User Not Found 
+  form <-- Server: Throw Not Found Exception
+  client <-- form: Display error
+else 
+  Server -> Server: Compared password with \nhashed password in database
+  alt Wrong password
+    form <-- Server: Return Bad Request Exception
+    client <-- form: Display error
+  else Correct password
+    Server -> Server: Generate tokens\n[Access Token, Refresh TOken]
+    Server -> db: Update Refresh Token
+    activate db
+    Server -> db: Save Access Token
+    deactivate db
+
+      form <-- Server: Return success response with \nAccessToken and RefreshToken
+      deactivate Server
+      client <-- form: Save tokens, redirect to home page
+      deactivate form
+  end
+end
+@enduml
